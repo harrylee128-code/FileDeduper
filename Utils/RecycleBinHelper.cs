@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Text;
@@ -106,7 +107,21 @@ namespace FileDeduper.Utils
                 var drive = new DriveInfo(root);
                 return drive.IsReady
                     && drive.DriveType == DriveType.Fixed
+                    && IsInteractiveUserSession()
                     && CanAccessRecycleBinShell();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool IsInteractiveUserSession()
+        {
+            try
+            {
+                return Environment.UserInteractive
+                    && Process.GetCurrentProcess().SessionId != 0;
             }
             catch
             {
