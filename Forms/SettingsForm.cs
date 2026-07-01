@@ -19,6 +19,9 @@ namespace FileDeduper.Forms
         private RadioButton _shortestRadio;
         private CheckBox _includeSubDirsChk;
         private CheckBox _verifyLikelyChk;
+        private RadioButton _accelAutoRadio;
+        private RadioButton _accelCpuRadio;
+        private RadioButton _accelGpuRadio;
         private NumericUpDown _minSizeUpDown;
         private Button _okBtn;
         private Button _cancelBtn;
@@ -34,7 +37,7 @@ namespace FileDeduper.Forms
         {
             this.Text = "设置";
             this.Width = 460;
-            this.Height = 460;
+            this.Height = 560;
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -129,6 +132,34 @@ namespace FileDeduper.Forms
             this.Controls.Add(scanGroup);
             y += 118;
 
+            // 硬件加速
+            var accelGroup = new GroupBox();
+            accelGroup.Text = "哈希计算加速";
+            accelGroup.Location = new Point(15, y);
+            accelGroup.Size = new Size(410, 105);
+
+            _accelAutoRadio = new RadioButton();
+            _accelAutoRadio.Text = "自动（推荐：可用时使用安全 provider，否则 CPU）";
+            _accelAutoRadio.Location = new Point(15, 24);
+            _accelAutoRadio.AutoSize = true;
+            _accelAutoRadio.Checked = true;
+
+            _accelCpuRadio = new RadioButton();
+            _accelCpuRadio.Text = "仅 CPU（最稳定，绿色便携）";
+            _accelCpuRadio.Location = new Point(15, 48);
+            _accelCpuRadio.AutoSize = true;
+
+            _accelGpuRadio = new RadioButton();
+            _accelGpuRadio.Text = "GPU 实验模式（无 provider 时自动回退 CPU）";
+            _accelGpuRadio.Location = new Point(15, 72);
+            _accelGpuRadio.AutoSize = true;
+
+            accelGroup.Controls.Add(_accelAutoRadio);
+            accelGroup.Controls.Add(_accelCpuRadio);
+            accelGroup.Controls.Add(_accelGpuRadio);
+            this.Controls.Add(accelGroup);
+            y += 115;
+
             // 按钮
             _okBtn = new Button();
             _okBtn.Text = "确定";
@@ -159,6 +190,9 @@ namespace FileDeduper.Forms
             _shortestRadio.Checked = Settings.KeepStrategy == KeepStrategy.ShortestPath;
             _includeSubDirsChk.Checked = Settings.IncludeSubdirectories;
             _verifyLikelyChk.Checked = Settings.HashVerifyLikelyGroups;
+            _accelAutoRadio.Checked = Settings.HardwareAccelerationMode == HardwareAccelerationMode.Auto;
+            _accelCpuRadio.Checked = Settings.HardwareAccelerationMode == HardwareAccelerationMode.CpuOnly;
+            _accelGpuRadio.Checked = Settings.HardwareAccelerationMode == HardwareAccelerationMode.GpuExperimental;
             _minSizeUpDown.Value = Math.Max(0, Math.Min(_minSizeUpDown.Maximum, Settings.MinFileSize / 1024));
         }
 
@@ -170,6 +204,9 @@ namespace FileDeduper.Forms
                                  : KeepStrategy.ShortestPath;
             Settings.IncludeSubdirectories = _includeSubDirsChk.Checked;
             Settings.HashVerifyLikelyGroups = _verifyLikelyChk.Checked;
+            Settings.HardwareAccelerationMode = _accelCpuRadio.Checked ? HardwareAccelerationMode.CpuOnly
+                                              : _accelGpuRadio.Checked ? HardwareAccelerationMode.GpuExperimental
+                                              : HardwareAccelerationMode.Auto;
             Settings.MinFileSize = (long)_minSizeUpDown.Value * 1024;
             this.DialogResult = DialogResult.OK;
             this.Close();

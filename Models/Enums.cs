@@ -30,6 +30,21 @@ namespace FileDeduper.Models
     }
 
     /// <summary>
+    /// 哈希计算加速模式。GPU 只作为可选能力，不能影响基础功能。
+    /// </summary>
+    public enum HardwareAccelerationMode
+    {
+        /// <summary>自动选择可用且安全的实现。</summary>
+        Auto = 0,
+
+        /// <summary>只使用 CPU 流式全量哈希。</summary>
+        CpuOnly = 1,
+
+        /// <summary>实验性 GPU 模式；没有可用 provider 时回退 CPU。</summary>
+        GpuExperimental = 2
+    }
+
+    /// <summary>
     /// 单个文件在查重中的置信度等级。
     /// </summary>
     public enum DuplicateConfidence

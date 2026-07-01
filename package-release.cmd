@@ -1,12 +1,12 @@
 @echo off
 REM ============================================================
 REM Build FileDeduper and create a portable release zip.
-REM Output: dist\FileDeduper-v2.0.0.zip
+REM Output: dist\FileDeduper-v2.1.0-preview-lite.zip
 REM ============================================================
 setlocal enableextensions
 
 set ROOT=%~dp0
-set VERSION=2.0.0
+set VERSION=2.1.0-preview-lite
 set DIST=%ROOT%dist
 set PACKAGE=%DIST%\FileDeduper-v%VERSION%
 set ZIP=%DIST%\FileDeduper-v%VERSION%.zip

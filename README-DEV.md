@@ -246,13 +246,20 @@ set OUTDIR=%ROOT%bin\Release
 
 ### GPU / 硬件加速边界
 
-当前核心查重链路不接入 CUDA、OpenCL 或 Intel 硬件加速。原因：
+当前核心查重链路提供 optional hardware acceleration 抽象和 benchmark，但不把 CUDA、OpenCL 或 Intel runtime 作为基础依赖。原因：
 
 - 基础重复文件查找主要受磁盘 I/O、目录枚举和安全删除约束。
 - 全量 MD5 使用流式分块读取，CPU 成本通常不是主瓶颈。
 - GPU 依赖会增加驱动、运行时和分发复杂度，不符合 v2 绿色便携目标。
 
-如果未来增加图片相似度、视频指纹或 AI 内容识别，可作为可选模块接入 DirectML、OpenCL、OpenVINO 或 ONNX Runtime GPU。
+如果未来增加图片相似度、视频指纹或 AI 内容识别，可作为可选模块接入 CUDA、DirectML、OpenCL、OpenVINO 或 ONNX Runtime GPU。
+
+哈希 benchmark：
+
+```cmd
+build-test.cmd
+bin\Test\FileDeduper.Test.exe --benchmark <folder>
+```
 
 ### 添加新的保留策略
 1. 在 `Models/Enums.cs` 中添加新的 `KeepStrategy` 枚举值
@@ -342,7 +349,12 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 
 ## 版本历史
 
-### v2.0.0 (当前版本)
+### v2.1.0-preview (当前开发版本)
+- 可选硬件加速模式与 provider/fallback 架构
+- NVIDIA 环境探测与哈希 benchmark
+- GPU experimental 无可用 provider 时保持 CPU 完整哈希 fallback
+
+### v2.0.0
 - 现代 WinForms v2 首屏布局
 - 回收站模式失败时不再静默永久删除
 - MD5 精确验证改为全量哈希
@@ -391,4 +403,4 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 ---
 
 **最后更新：2026-06-19**
-**版本：v2.0.0**
+**版本：v2.1.0-preview**

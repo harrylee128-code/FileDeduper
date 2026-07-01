@@ -7,7 +7,7 @@ Use this before publishing a GitHub release.
 - [ ] `build.cmd` succeeds.
 - [ ] `build-test.cmd` succeeds.
 - [ ] `bin\Test\FileDeduper.Test.exe` reports `ALL PASSED`.
-- [ ] `package-release.cmd` creates `dist\FileDeduper-v2.0.0.zip`.
+- [ ] `package-release.cmd` creates `dist\FileDeduper-v2.1.0-preview-lite.zip`.
 - [ ] GitHub Actions Build workflow passes on the release commit and uploads the portable zip artifact.
 - [ ] Recycle Bin mode is manually verified with disposable files.
 - [ ] Permanent delete mode is verified only with disposable files.
@@ -27,6 +27,12 @@ Use this before publishing a GitHub release.
 - [ ] `bin/` and generated config files are not committed.
 - [ ] No private local paths are required to build or test.
 - [ ] Issue templates are present.
+
+## Hardware Acceleration Releases
+
+- [ ] Lite/portable asset remains available and requires no GPU runtime.
+- [ ] GPU-enabled asset, if published, documents supported GPU vendors, driver/runtime requirements, fallback behavior, and third-party licenses.
+- [ ] GPU-enabled asset does not replace or weaken CPU full-file hash correctness.
 
 ## Manual UI Pass
 

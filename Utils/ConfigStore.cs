@@ -42,6 +42,7 @@ namespace FileDeduper.Utils
                 settings.DeleteMode = (DeleteMode)GetLong(map, "DeleteMode", (long)settings.DeleteMode);
                 settings.KeepStrategy = (KeepStrategy)GetLong(map, "KeepStrategy", (long)settings.KeepStrategy);
                 settings.HashVerifyLikelyGroups = GetBool(map, "HashVerifyLikelyGroups", settings.HashVerifyLikelyGroups);
+                settings.HardwareAccelerationMode = (HardwareAccelerationMode)GetLong(map, "HardwareAccelerationMode", (long)settings.HardwareAccelerationMode);
                 settings.MinFileSize = GetLong(map, "MinFileSize", settings.MinFileSize);
 
                 object foldersObj;
@@ -73,6 +74,7 @@ namespace FileDeduper.Utils
                 sb.Append("  \"DeleteMode\": ").Append((int)settings.DeleteMode).Append(",\r\n");
                 sb.Append("  \"KeepStrategy\": ").Append((int)settings.KeepStrategy).Append(",\r\n");
                 sb.Append("  \"HashVerifyLikelyGroups\": ").Append(settings.HashVerifyLikelyGroups ? "true" : "false").Append(",\r\n");
+                sb.Append("  \"HardwareAccelerationMode\": ").Append((int)settings.HardwareAccelerationMode).Append(",\r\n");
                 sb.Append("  \"MinFileSize\": ").Append(settings.MinFileSize).Append(",\r\n");
                 sb.Append("  \"LastFolders\": [");
                 for (int i = 0; i < settings.LastFolders.Count; i++)

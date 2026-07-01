@@ -19,8 +19,16 @@ namespace FileDeduper.Core
     /// </summary>
     public class DuplicateDetector
     {
+        private readonly HardwareAccelerationMode _hardwareMode;
+
         public DuplicateDetector()
         {
+            _hardwareMode = HardwareAccelerationMode.Auto;
+        }
+
+        public DuplicateDetector(HardwareAccelerationMode hardwareMode)
+        {
+            _hardwareMode = hardwareMode;
         }
 
         /// <summary>阶段1：快速预筛，返回所有重复组（Likely + Suspected）。</summary>
@@ -141,7 +149,7 @@ namespace FileDeduper.Core
                     hp.CurrentFile = f.FullPath;
                     if (progress != null) progress.Report(Clone(hp));
 
-                    f.Hash = HashHelper.ComputeFullMd5(f.FullPath, null);
+                    f.Hash = HashHelper.ComputeFullMd5(f.FullPath, _hardwareMode, null);
                     done++;
                     hp.DoneFiles = done;
                     if (progress != null) progress.Report(Clone(hp));

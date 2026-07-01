@@ -20,6 +20,13 @@ namespace FileDeduper.Tests
         private static int Main(string[] args)
         {
             Console.OutputEncoding = System.Text.Encoding.UTF8;
+
+            if (args.Length > 0 && string.Equals(args[0], "--benchmark", StringComparison.OrdinalIgnoreCase))
+            {
+                string benchmarkRoot = args.Length > 1 ? args[1] : CreateBenchmarkFixture();
+                return RunBenchmark(benchmarkRoot);
+            }
+
             bool cleanupTestRoot = false;
             string testRoot = args.Length > 0 ? args[0] : CreateDefaultFixture(out cleanupTestRoot);
 
@@ -219,8 +226,21 @@ namespace FileDeduper.Tests
                 ref passed, ref failed);
             Console.WriteLine();
 
-            // ---- 步骤8: 回收站模式安全测试 ----
-            Console.WriteLine("[8] 回收站模式安全测试…");
+            // ---- 步骤8: 硬件加速 fallback 测试 ----
+            Console.WriteLine("[8] 硬件加速 fallback 测试…");
+            string hashProbe = Path.Combine(testRoot, "FolderA", "doc.txt");
+            string cpuHash = HashHelper.ComputeFullMd5(hashProbe, HardwareAccelerationMode.CpuOnly, null);
+            var gpuAttempt = HashEngine.ComputeFullMd5(hashProbe, HardwareAccelerationMode.GpuExperimental, null);
+            Check("GPU experimental 模式没有 provider 时保持完整哈希正确性",
+                !string.IsNullOrEmpty(cpuHash) && cpuHash == gpuAttempt.Hash,
+                ref passed, ref failed);
+            Check("GPU experimental 模式没有 provider 时回退 CPU",
+                !gpuAttempt.HardwareAccelerated && !string.IsNullOrEmpty(gpuAttempt.FallbackReason),
+                ref passed, ref failed);
+            Console.WriteLine();
+
+            // ---- 步骤9: 回收站模式安全测试 ----
+            Console.WriteLine("[9] 回收站模式安全测试…");
             string recycleTempDir = Path.Combine(Path.GetTempPath(), "FileDeduperRecycleTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(recycleTempDir);
             string recycleFileName = "filededuper-recycle-test-" + Guid.NewGuid().ToString("N") + ".txt";
@@ -250,8 +270,8 @@ namespace FileDeduper.Tests
             }
             Console.WriteLine();
 
-            // ---- 步骤9: 精确验证必须读取完整文件 ----
-            Console.WriteLine("[9] 精确验证完整性测试…");
+            // ---- 步骤10: 精确验证必须读取完整文件 ----
+            Console.WriteLine("[10] 精确验证完整性测试…");
             string hashTempDir = Path.Combine(Path.GetTempPath(), "FileDeduperHashTest_" + Guid.NewGuid().ToString("N"));
             Directory.CreateDirectory(hashTempDir);
             try
@@ -278,12 +298,13 @@ namespace FileDeduper.Tests
             }
             Console.WriteLine();
 
-            // ---- 步骤10: 配置读写测试 ----
-            Console.WriteLine("[10] 配置读写测试…");
+            // ---- 步骤11: 配置读写测试 ----
+            Console.WriteLine("[11] 配置读写测试…");
             var settings = new AppSettings();
             settings.DeleteMode = DeleteMode.Permanent;
             settings.KeepStrategy = KeepStrategy.Newest;
             settings.IncludeSubdirectories = false;
+            settings.HardwareAccelerationMode = HardwareAccelerationMode.GpuExperimental;
             settings.LastFolders.Add(testRoot);
             string tempConfig = Path.Combine(Path.GetTempPath(), "FileDeduper_test_config.json");
             // 临时改 BaseDirectory 不现实，直接测序列化往返：保存到 exe 同目录再读
@@ -293,6 +314,7 @@ namespace FileDeduper.Tests
             bool cfgOk = loaded.DeleteMode == DeleteMode.Permanent
                       && loaded.KeepStrategy == KeepStrategy.Newest
                       && loaded.IncludeSubdirectories == false
+                      && loaded.HardwareAccelerationMode == HardwareAccelerationMode.GpuExperimental
                       && loaded.LastFolders.Contains(testRoot);
             Check("配置往返读写一致", cfgOk, ref passed, ref failed);
             // 清理：恢复默认配置
@@ -359,6 +381,46 @@ namespace FileDeduper.Tests
                 // 如果当前系统无法枚举回收站，测试会退回检查文件是否仍保留在原处。
             }
             return false;
+        }
+
+        private static int RunBenchmark(string root)
+        {
+            if (!Directory.Exists(root))
+            {
+                Console.WriteLine("[FAIL] benchmark 目录不存在: " + root);
+                return 1;
+            }
+
+            var files = Directory.GetFiles(root, "*", SearchOption.AllDirectories);
+            Console.WriteLine("====== FileDeduper Hash Benchmark ======");
+            Console.WriteLine("目录: " + root);
+            Console.WriteLine("文件数: " + files.Length);
+            Console.WriteLine("硬件环境: " + HashEngine.Describe(HardwareAccelerationMode.GpuExperimental));
+
+            var cpu = HashBenchmark.Run(files, HardwareAccelerationMode.CpuOnly);
+            Console.WriteLine("CPU provider: " + cpu.Provider);
+            Console.WriteLine("CPU bytes: " + cpu.TotalBytes);
+            Console.WriteLine("CPU elapsed: " + cpu.Elapsed.TotalSeconds.ToString("0.000") + "s");
+            Console.WriteLine("CPU throughput: " + cpu.MegabytesPerSecond.ToString("0.00") + " MB/s");
+
+            var gpu = HashBenchmark.Run(files, HardwareAccelerationMode.GpuExperimental);
+            Console.WriteLine("GPU experimental provider: " + gpu.Provider);
+            Console.WriteLine("GPU experimental accelerated: False");
+            Console.WriteLine("GPU experimental fallback: " + gpu.FallbackReason);
+            Console.WriteLine("GPU experimental elapsed: " + gpu.Elapsed.TotalSeconds.ToString("0.000") + "s");
+            Console.WriteLine("GPU experimental throughput: " + gpu.MegabytesPerSecond.ToString("0.00") + " MB/s");
+            return 0;
+        }
+
+        private static string CreateBenchmarkFixture()
+        {
+            string root = Path.Combine(Path.GetTempPath(), "FileDeduperBenchmark_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(root);
+            for (int i = 0; i < 8; i++)
+            {
+                WriteLargeFileWithDifferentMiddle(Path.Combine(root, "bench-" + i + ".bin"), (byte)(65 + i));
+            }
+            return root;
         }
 
         private static string CreateDefaultFixture(out bool cleanup)
