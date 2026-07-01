@@ -920,7 +920,8 @@ namespace FileDeduper.Forms
                 return;
             }
 
-            SetBusy(true, "正在计算 MD5… " + HashEngine.Describe(_settings.HardwareAccelerationMode));
+            SetBusy(true, "正在计算 MD5… " + HashEngine.Describe(_settings.HardwareAccelerationMode)
+                + "，" + HashParallelism.Describe(_settings.HashParallelism));
             _progressBar.Value = 0;
             _progressBar.Style = ProgressBarStyle.Blocks;
             _cts = new CancellationTokenSource();
@@ -950,7 +951,7 @@ namespace FileDeduper.Forms
             }
 
             var group = toVerify[index];
-            var detector = new DuplicateDetector(_settings.HardwareAccelerationMode);
+            var detector = new DuplicateDetector(_settings.HardwareAccelerationMode, _settings.HashParallelism);
             int totalForGroup = group.Files.Count;
             var progress = new Progress<HashVerifyProgress>(p =>
             {

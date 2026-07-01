@@ -43,6 +43,7 @@ namespace FileDeduper.Utils
                 settings.KeepStrategy = (KeepStrategy)GetLong(map, "KeepStrategy", (long)settings.KeepStrategy);
                 settings.HashVerifyLikelyGroups = GetBool(map, "HashVerifyLikelyGroups", settings.HashVerifyLikelyGroups);
                 settings.HardwareAccelerationMode = (HardwareAccelerationMode)GetLong(map, "HardwareAccelerationMode", (long)settings.HardwareAccelerationMode);
+                settings.HashParallelism = HashParallelism.NormalizeForSettings((int)GetLong(map, "HashParallelism", settings.HashParallelism));
                 settings.MinFileSize = GetLong(map, "MinFileSize", settings.MinFileSize);
 
                 object foldersObj;
@@ -75,6 +76,7 @@ namespace FileDeduper.Utils
                 sb.Append("  \"KeepStrategy\": ").Append((int)settings.KeepStrategy).Append(",\r\n");
                 sb.Append("  \"HashVerifyLikelyGroups\": ").Append(settings.HashVerifyLikelyGroups ? "true" : "false").Append(",\r\n");
                 sb.Append("  \"HardwareAccelerationMode\": ").Append((int)settings.HardwareAccelerationMode).Append(",\r\n");
+                sb.Append("  \"HashParallelism\": ").Append(HashParallelism.NormalizeForSettings(settings.HashParallelism)).Append(",\r\n");
                 sb.Append("  \"MinFileSize\": ").Append(settings.MinFileSize).Append(",\r\n");
                 sb.Append("  \"LastFolders\": [");
                 for (int i = 0; i < settings.LastFolders.Count; i++)

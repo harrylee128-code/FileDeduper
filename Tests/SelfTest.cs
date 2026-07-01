@@ -298,13 +298,61 @@ namespace FileDeduper.Tests
             }
             Console.WriteLine();
 
-            // ---- 步骤11: 配置读写测试 ----
-            Console.WriteLine("[11] 配置读写测试…");
+            // ---- 步骤11: 并行哈希验证正确性测试 ----
+            Console.WriteLine("[11] 并行哈希验证正确性测试…");
+            string parallelTempDir = Path.Combine(Path.GetTempPath(), "FileDeduperParallelHashTest_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(parallelTempDir);
+            try
+            {
+                string p1 = Path.Combine(parallelTempDir, "same-a.bin");
+                string p2 = Path.Combine(parallelTempDir, "same-b.bin");
+                string p3 = Path.Combine(parallelTempDir, "different.bin");
+                WriteLargeFileWithDifferentMiddle(p1, 77);
+                File.Copy(p1, p2);
+                WriteLargeFileWithDifferentMiddle(p3, 78);
+                File.SetLastWriteTime(p1, new DateTime(2024, 3, 1, 8, 0, 0));
+                File.SetLastWriteTime(p2, new DateTime(2024, 4, 1, 8, 0, 0));
+                File.SetLastWriteTime(p3, new DateTime(2024, 5, 1, 8, 0, 0));
+
+                var parallelFiles = new List<FileEntry>();
+                parallelFiles.Add(FileEntry.FromPath(p1));
+                parallelFiles.Add(FileEntry.FromPath(p2));
+                parallelFiles.Add(FileEntry.FromPath(p3));
+                var parallelGroup = new DuplicateDetector().FastDetect(parallelFiles)[0];
+                var parallelProgress = new CapturingProgress();
+                var parallelTask = new DuplicateDetector(HardwareAccelerationMode.CpuOnly, 3)
+                    .VerifyByHashAsync(parallelGroup, parallelProgress, CancellationToken.None);
+                parallelTask.Wait();
+
+                bool exactlyOnePair = parallelTask.Result.Count == 1 && parallelTask.Result[0].Files.Count == 2;
+                bool excludedDifferent = true;
+                if (exactlyOnePair)
+                {
+                    foreach (var f in parallelTask.Result[0].Files)
+                    {
+                        if (string.Equals(f.FullPath, p3, StringComparison.OrdinalIgnoreCase)) excludedDifferent = false;
+                    }
+                }
+                Check("并行哈希只验证完整内容相同的文件",
+                    exactlyOnePair && excludedDifferent, ref passed, ref failed);
+                Check("并行哈希进度报告完成文件数",
+                    parallelProgress.ContainsDoneFiles(3),
+                    ref passed, ref failed);
+            }
+            finally
+            {
+                if (Directory.Exists(parallelTempDir)) Directory.Delete(parallelTempDir, true);
+            }
+            Console.WriteLine();
+
+            // ---- 步骤12: 配置读写测试 ----
+            Console.WriteLine("[12] 配置读写测试…");
             var settings = new AppSettings();
             settings.DeleteMode = DeleteMode.Permanent;
             settings.KeepStrategy = KeepStrategy.Newest;
             settings.IncludeSubdirectories = false;
             settings.HardwareAccelerationMode = HardwareAccelerationMode.GpuExperimental;
+            settings.HashParallelism = 3;
             settings.LastFolders.Add(testRoot);
             string tempConfig = Path.Combine(Path.GetTempPath(), "FileDeduper_test_config.json");
             // 临时改 BaseDirectory 不现实，直接测序列化往返：保存到 exe 同目录再读
@@ -315,6 +363,7 @@ namespace FileDeduper.Tests
                       && loaded.KeepStrategy == KeepStrategy.Newest
                       && loaded.IncludeSubdirectories == false
                       && loaded.HardwareAccelerationMode == HardwareAccelerationMode.GpuExperimental
+                      && loaded.HashParallelism == 3
                       && loaded.LastFolders.Contains(testRoot);
             Check("配置往返读写一致", cfgOk, ref passed, ref failed);
             // 清理：恢复默认配置
@@ -397,19 +446,55 @@ namespace FileDeduper.Tests
             Console.WriteLine("文件数: " + files.Length);
             Console.WriteLine("硬件环境: " + HashEngine.Describe(HardwareAccelerationMode.GpuExperimental));
 
-            var cpu = HashBenchmark.Run(files, HardwareAccelerationMode.CpuOnly);
-            Console.WriteLine("CPU provider: " + cpu.Provider);
-            Console.WriteLine("CPU bytes: " + cpu.TotalBytes);
-            Console.WriteLine("CPU elapsed: " + cpu.Elapsed.TotalSeconds.ToString("0.000") + "s");
-            Console.WriteLine("CPU throughput: " + cpu.MegabytesPerSecond.ToString("0.00") + " MB/s");
+            var cpu = HashBenchmark.Run(files, HardwareAccelerationMode.CpuOnly, 1);
+            PrintBenchmarkResult("CPU sequential", cpu);
 
-            var gpu = HashBenchmark.Run(files, HardwareAccelerationMode.GpuExperimental);
+            var cpuParallel = HashBenchmark.Run(files, HardwareAccelerationMode.CpuOnly, HashParallelism.Auto);
+            PrintBenchmarkResult("CPU auto parallel", cpuParallel);
+
+            var gpu = HashBenchmark.Run(files, HardwareAccelerationMode.GpuExperimental, HashParallelism.Auto);
             Console.WriteLine("GPU experimental provider: " + gpu.Provider);
             Console.WriteLine("GPU experimental accelerated: False");
             Console.WriteLine("GPU experimental fallback: " + gpu.FallbackReason);
             Console.WriteLine("GPU experimental elapsed: " + gpu.Elapsed.TotalSeconds.ToString("0.000") + "s");
             Console.WriteLine("GPU experimental throughput: " + gpu.MegabytesPerSecond.ToString("0.00") + " MB/s");
             return 0;
+        }
+
+        private static void PrintBenchmarkResult(string label, HashBenchmarkResult result)
+        {
+            Console.WriteLine(label + " provider: " + result.Provider);
+            Console.WriteLine(label + " parallelism: requested=" + result.RequestedParallelism + ", effective=" + result.EffectiveParallelism);
+            Console.WriteLine(label + " files: " + result.FileCount);
+            Console.WriteLine(label + " bytes: " + result.TotalBytes);
+            Console.WriteLine(label + " elapsed: " + result.Elapsed.TotalSeconds.ToString("0.000") + "s");
+            Console.WriteLine(label + " throughput: " + result.MegabytesPerSecond.ToString("0.00") + " MB/s");
+        }
+
+        private sealed class CapturingProgress : IProgress<HashVerifyProgress>
+        {
+            public readonly List<HashVerifyProgress> Events = new List<HashVerifyProgress>();
+            private readonly object _gate = new object();
+
+            public void Report(HashVerifyProgress value)
+            {
+                lock (_gate)
+                {
+                    Events.Add(value);
+                }
+            }
+
+            public bool ContainsDoneFiles(int doneFiles)
+            {
+                lock (_gate)
+                {
+                    foreach (var item in Events)
+                    {
+                        if (item.DoneFiles == doneFiles) return true;
+                    }
+                    return false;
+                }
+            }
         }
 
         private static string CreateBenchmarkFixture()

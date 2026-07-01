@@ -2,6 +2,7 @@ using System;
 using System.Drawing;
 using System.Windows.Forms;
 using FileDeduper.Models;
+using FileDeduper.Utils;
 
 namespace FileDeduper.Forms
 {
@@ -23,6 +24,7 @@ namespace FileDeduper.Forms
         private RadioButton _accelCpuRadio;
         private RadioButton _accelGpuRadio;
         private NumericUpDown _minSizeUpDown;
+        private NumericUpDown _hashParallelismUpDown;
         private Button _okBtn;
         private Button _cancelBtn;
 
@@ -37,7 +39,7 @@ namespace FileDeduper.Forms
         {
             this.Text = "设置";
             this.Width = 460;
-            this.Height = 560;
+            this.Height = 590;
             this.StartPosition = FormStartPosition.CenterParent;
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.MaximizeBox = false;
@@ -100,7 +102,7 @@ namespace FileDeduper.Forms
             var scanGroup = new GroupBox();
             scanGroup.Text = "扫描与哈希";
             scanGroup.Location = new Point(15, y);
-            scanGroup.Size = new Size(410, 108);
+            scanGroup.Size = new Size(410, 138);
 
             _includeSubDirsChk = new CheckBox();
             _includeSubDirsChk.Text = "默认包含子目录";
@@ -125,12 +127,26 @@ namespace FileDeduper.Forms
             _minSizeUpDown.Maximum = 1048576;
             _minSizeUpDown.Value = 0;
 
+            var parallelLabel = new Label();
+            parallelLabel.Text = "哈希并行度（0=自动）：";
+            parallelLabel.Location = new Point(15, 104);
+            parallelLabel.AutoSize = true;
+
+            _hashParallelismUpDown = new NumericUpDown();
+            _hashParallelismUpDown.Location = new Point(210, 101);
+            _hashParallelismUpDown.Size = new Size(90, 22);
+            _hashParallelismUpDown.Minimum = 0;
+            _hashParallelismUpDown.Maximum = HashParallelism.Maximum;
+            _hashParallelismUpDown.Value = 0;
+
             scanGroup.Controls.Add(_includeSubDirsChk);
             scanGroup.Controls.Add(_verifyLikelyChk);
             scanGroup.Controls.Add(minLabel);
             scanGroup.Controls.Add(_minSizeUpDown);
+            scanGroup.Controls.Add(parallelLabel);
+            scanGroup.Controls.Add(_hashParallelismUpDown);
             this.Controls.Add(scanGroup);
-            y += 118;
+            y += 148;
 
             // 硬件加速
             var accelGroup = new GroupBox();
@@ -194,6 +210,7 @@ namespace FileDeduper.Forms
             _accelCpuRadio.Checked = Settings.HardwareAccelerationMode == HardwareAccelerationMode.CpuOnly;
             _accelGpuRadio.Checked = Settings.HardwareAccelerationMode == HardwareAccelerationMode.GpuExperimental;
             _minSizeUpDown.Value = Math.Max(0, Math.Min(_minSizeUpDown.Maximum, Settings.MinFileSize / 1024));
+            _hashParallelismUpDown.Value = Math.Max(_hashParallelismUpDown.Minimum, Math.Min(_hashParallelismUpDown.Maximum, Settings.HashParallelism));
         }
 
         private void OkBtn_Click(object sender, EventArgs e)
@@ -207,6 +224,7 @@ namespace FileDeduper.Forms
             Settings.HardwareAccelerationMode = _accelCpuRadio.Checked ? HardwareAccelerationMode.CpuOnly
                                               : _accelGpuRadio.Checked ? HardwareAccelerationMode.GpuExperimental
                                               : HardwareAccelerationMode.Auto;
+            Settings.HashParallelism = HashParallelism.NormalizeForSettings((int)_hashParallelismUpDown.Value);
             Settings.MinFileSize = (long)_minSizeUpDown.Value * 1024;
             this.DialogResult = DialogResult.OK;
             this.Close();

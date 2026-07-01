@@ -20,15 +20,22 @@ namespace FileDeduper.Core
     public class DuplicateDetector
     {
         private readonly HardwareAccelerationMode _hardwareMode;
+        private readonly int _hashParallelism;
 
         public DuplicateDetector()
+            : this(HardwareAccelerationMode.Auto, HashParallelism.Auto)
         {
-            _hardwareMode = HardwareAccelerationMode.Auto;
         }
 
         public DuplicateDetector(HardwareAccelerationMode hardwareMode)
+            : this(hardwareMode, HashParallelism.Auto)
+        {
+        }
+
+        public DuplicateDetector(HardwareAccelerationMode hardwareMode, int hashParallelism)
         {
             _hardwareMode = hardwareMode;
+            _hashParallelism = HashParallelism.NormalizeForSettings(hashParallelism);
         }
 
         /// <summary>阶段1：快速预筛，返回所有重复组（Likely + Suspected）。</summary>
@@ -138,21 +145,13 @@ namespace FileDeduper.Core
                 var result = new List<DuplicateGroup>();
                 if (group == null || group.Files.Count == 0) return result;
 
-                int total = group.Files.Count;
-                int done = 0;
-                var hp = new HashVerifyProgress { TotalFiles = total, DoneFiles = 0, CurrentFile = "" };
-
-                // 逐文件算哈希
-                foreach (var f in group.Files)
+                try
                 {
-                    if (cancellationToken.IsCancellationRequested) break;
-                    hp.CurrentFile = f.FullPath;
-                    if (progress != null) progress.Report(Clone(hp));
-
-                    f.Hash = HashHelper.ComputeFullMd5(f.FullPath, _hardwareMode, null);
-                    done++;
-                    hp.DoneFiles = done;
-                    if (progress != null) progress.Report(Clone(hp));
+                    ComputeHashes(group, progress, cancellationToken);
+                }
+                catch (OperationCanceledException)
+                {
+                    return result;
                 }
 
                 if (cancellationToken.IsCancellationRequested) return result;
@@ -187,6 +186,53 @@ namespace FileDeduper.Core
                 }
                 return result;
             }, cancellationToken);
+        }
+
+        private void ComputeHashes(
+            DuplicateGroup group,
+            IProgress<HashVerifyProgress> progress,
+            CancellationToken cancellationToken)
+        {
+            int total = group.Files.Count;
+            int done = 0;
+            int degree = HashParallelism.Resolve(_hashParallelism);
+
+            if (degree <= 1 || total <= 1)
+            {
+                foreach (var f in group.Files)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    Report(progress, total, done, f.FullPath);
+                    f.Hash = HashHelper.ComputeFullMd5(f.FullPath, _hardwareMode, null);
+                    done++;
+                    Report(progress, total, done, f.FullPath);
+                }
+                return;
+            }
+
+            var options = new ParallelOptions();
+            options.CancellationToken = cancellationToken;
+            options.MaxDegreeOfParallelism = degree;
+
+            Parallel.ForEach(group.Files, options, f =>
+            {
+                options.CancellationToken.ThrowIfCancellationRequested();
+                Report(progress, total, done, f.FullPath);
+                f.Hash = HashHelper.ComputeFullMd5(f.FullPath, _hardwareMode, null);
+                int completed = Interlocked.Increment(ref done);
+                Report(progress, total, completed, f.FullPath);
+            });
+        }
+
+        private static void Report(IProgress<HashVerifyProgress> progress, int total, int done, string currentFile)
+        {
+            if (progress == null) return;
+            progress.Report(new HashVerifyProgress
+            {
+                TotalFiles = total,
+                DoneFiles = done,
+                CurrentFile = currentFile
+            });
         }
 
         private static HashVerifyProgress Clone(HashVerifyProgress p)

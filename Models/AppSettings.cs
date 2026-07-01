@@ -26,6 +26,9 @@ namespace FileDeduper.Models
         /// <summary>哈希计算加速模式。</summary>
         public HardwareAccelerationMode HardwareAccelerationMode { get; set; }
 
+        /// <summary>哈希验证并行度；0 表示自动。</summary>
+        public int HashParallelism { get; set; }
+
         /// <summary>最小文件大小(字节)，小于此值的文件忽略。</summary>
         public long MinFileSize { get; set; }
 
@@ -37,6 +40,7 @@ namespace FileDeduper.Models
             KeepStrategy = KeepStrategy.Oldest;
             HashVerifyLikelyGroups = false;
             HardwareAccelerationMode = HardwareAccelerationMode.Auto;
+            HashParallelism = 0;
             MinFileSize = 0;
         }
     }

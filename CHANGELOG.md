@@ -1,8 +1,10 @@
 # Changelog
 
-## v2.1.0-preview - Unreleased
+## v2.1.0-preview.2 - Unreleased
 
 - 新增可选硬件加速模式、NVIDIA 环境探测、CPU fallback 和哈希 benchmark 入口。
+- 新增可配置哈希并行度；Auto 模式保守使用最多 4 个并发文件哈希，支持手动设为 1 单线程。
+- benchmark 增加 CPU sequential、CPU auto parallel、GPU experimental fallback 对比输出。
 - 新增 GPU/硬件加速边界说明和后续路线图。
 - 记录未来 GitHub Release 拆分轻量版与 GPU 支持版的发布策略。
 

@@ -70,7 +70,11 @@ FileDeduper/
 │   └── SelfTest.cs               # 核心功能测试套件
 ├── Utils/                        # 工具类库
 │   ├── ConfigStore.cs            # JSON 配置存储
-│   ├── HashHelper.cs             # MD5 哈希计算（全量分块读取）
+│   ├── HardwareCapabilityDetector.cs # NVIDIA/CUDA 环境探测
+│   ├── HashBenchmark.cs          # 哈希吞吐 benchmark
+│   ├── HashEngine.cs             # 哈希 provider/fallback 抽象
+│   ├── HashHelper.cs             # MD5 哈希计算入口
+│   ├── HashParallelism.cs        # 哈希并行度解析与限制
 │   ├── MiniJson.cs               # 自定义 JSON 解析器
 │   └── RecycleBinHelper.cs       # 回收站操作（P/Invoke）
 ├── Program.cs                    # 程序入口（DPI 感知）
@@ -254,6 +258,12 @@ set OUTDIR=%ROOT%bin\Release
 
 如果未来增加图片相似度、视频指纹或 AI 内容识别，可作为可选模块接入 CUDA、DirectML、OpenCL、OpenVINO 或 ONNX Runtime GPU。
 
+哈希验证支持 `HashParallelism`：
+
+- `0`：Auto，当前最多 4 个并发文件哈希。
+- `1`：单线程，适合机械硬盘、网络盘或排查性能问题。
+- `2-64`：手动并行度，适合高速 SSD/NVMe 先小样本压测。
+
 哈希 benchmark：
 
 ```cmd
@@ -333,7 +343,9 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
   "MinFileSize": 1024,
   "KeepStrategy": 0,
   "DeleteMode": 0,
-  "HashVerifyLikelyGroups": false
+  "HashVerifyLikelyGroups": false,
+  "HardwareAccelerationMode": 0,
+  "HashParallelism": 0
 }
 ```
 
@@ -344,14 +356,17 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 - `KeepStrategy`：保留策略（0=最旧，1=最新，2=路径最短）
 - `DeleteMode`：删除模式（0=回收站，1=永久删除）
 - `HashVerifyLikelyGroups`：是否对高置信度组也做哈希验证
+- `HardwareAccelerationMode`：硬件加速模式（0=Auto，1=CPU only，2=GPU experimental）
+- `HashParallelism`：哈希验证并行度（0=Auto，1=单线程）
 
 ---
 
 ## 版本历史
 
-### v2.1.0-preview (当前开发版本)
+### v2.1.0-preview.2 (当前开发版本)
 - 可选硬件加速模式与 provider/fallback 架构
 - NVIDIA 环境探测与哈希 benchmark
+- 可配置哈希并行度与 CPU sequential/auto parallel benchmark 对比
 - GPU experimental 无可用 provider 时保持 CPU 完整哈希 fallback
 
 ### v2.0.0
@@ -402,5 +417,5 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 
 ---
 
-**最后更新：2026-06-19**
-**版本：v2.1.0-preview**
+**最后更新：2026-07-02**
+**版本：v2.1.0-preview.2**
