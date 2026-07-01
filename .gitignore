@@ -1,0 +1,21 @@
+# Build outputs
+bin/
+obj/
+dist/
+*.exe
+*.pdb
+
+# Runtime config generated next to the executable
+FileDeduper.config.json
+
+# Windows and editor noise
+Thumbs.db
+Desktop.ini
+.vs/
+.vscode/
+*.user
+*.suo
+
+# Local test scratch
+TestDedupe/
+*.tmp

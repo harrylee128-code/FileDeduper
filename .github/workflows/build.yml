@@ -1,0 +1,37 @@
+name: Build
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+
+jobs:
+  windows:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build app
+        shell: cmd
+        run: build.cmd
+
+      - name: Build tests
+        shell: cmd
+        run: build-test.cmd
+
+      - name: Run self tests
+        shell: cmd
+        run: bin\Test\FileDeduper.Test.exe
+
+      - name: Package portable zip
+        shell: cmd
+        run: package-release.cmd
+
+      - name: Upload portable artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: FileDeduper-v2.0.0
+          path: dist/FileDeduper-v2.0.0.zip
+          if-no-files-found: error
