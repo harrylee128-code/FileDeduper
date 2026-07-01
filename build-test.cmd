@@ -29,7 +29,7 @@ if not exist "%REFDIR%\System.dll" (
     exit /b 1
 )
 
-"%CSC%" /nologo /target:exe /platform:anycpu /langversion:5 /optimize+ /out:"%OUTDIR%\FileDeduper.Test.exe" /reference:"%REFDIR%\System.dll" /reference:"%REFDIR%\System.Core.dll" "%ROOT%Tests\SelfTest.cs" "%ROOT%Core\FileScanner.cs" "%ROOT%Core\DuplicateDetector.cs" "%ROOT%Core\SmartMarker.cs" "%ROOT%Core\FileDeleter.cs" "%ROOT%Models\Enums.cs" "%ROOT%Models\FileEntry.cs" "%ROOT%Models\DuplicateGroup.cs" "%ROOT%Models\AppSettings.cs" "%ROOT%Utils\ConfigStore.cs" "%ROOT%Utils\MiniJson.cs" "%ROOT%Utils\RecycleBinHelper.cs" "%ROOT%Utils\HashHelper.cs"
+"%CSC%" /nologo /target:exe /platform:anycpu /langversion:5 /optimize+ /nostdlib+ /out:"%OUTDIR%\FileDeduper.Test.exe" /reference:"%REFDIR%\mscorlib.dll" /reference:"%REFDIR%\System.dll" /reference:"%REFDIR%\System.Core.dll" "%ROOT%Tests\SelfTest.cs" "%ROOT%Core\FileScanner.cs" "%ROOT%Core\DuplicateDetector.cs" "%ROOT%Core\SmartMarker.cs" "%ROOT%Core\FileDeleter.cs" "%ROOT%Models\Enums.cs" "%ROOT%Models\FileEntry.cs" "%ROOT%Models\DuplicateGroup.cs" "%ROOT%Models\AppSettings.cs" "%ROOT%Utils\ConfigStore.cs" "%ROOT%Utils\MiniJson.cs" "%ROOT%Utils\RecycleBinHelper.cs" "%ROOT%Utils\HashHelper.cs"
 
 if errorlevel 1 (
     echo [FAILED] Test build failed.
