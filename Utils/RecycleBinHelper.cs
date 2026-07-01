@@ -104,7 +104,31 @@ namespace FileDeduper.Utils
                 if (string.IsNullOrWhiteSpace(root)) return false;
 
                 var drive = new DriveInfo(root);
-                return drive.IsReady && drive.DriveType == DriveType.Fixed;
+                return drive.IsReady
+                    && drive.DriveType == DriveType.Fixed
+                    && CanAccessRecycleBinShell();
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        public static bool CanAccessRecycleBinShell()
+        {
+            try
+            {
+                Type shellType = Type.GetTypeFromProgID("Shell.Application");
+                if (shellType == null) return false;
+
+                object shell = Activator.CreateInstance(shellType);
+                object recycleBin = shellType.InvokeMember("NameSpace",
+                    System.Reflection.BindingFlags.InvokeMethod, null, shell, new object[] { 10 });
+                if (recycleBin == null) return false;
+
+                object items = recycleBin.GetType().InvokeMember("Items",
+                    System.Reflection.BindingFlags.InvokeMethod, null, recycleBin, null);
+                return items != null;
             }
             catch
             {
