@@ -6,6 +6,7 @@ REM ============================================================
 setlocal enableextensions
 
 set CSC=C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe
+if not exist "%CSC%" set CSC=C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 
 set ROOT=%~dp0
 set OUTDIR=%ROOT%bin\Test
@@ -17,6 +18,16 @@ if not exist "%REFDIR%\System.dll" set REFDIR=C:\Program Files (x86)\Reference A
 if not exist "%REFDIR%\System.dll" set REFDIR=C:\Windows\Microsoft.NET\Framework64\v4.0.30319
 
 echo Building test exe...
+
+if not exist "%CSC%" (
+    echo [FAILED] Cannot find .NET Framework csc.exe.
+    exit /b 1
+)
+
+if not exist "%REFDIR%\System.dll" (
+    echo [FAILED] Cannot find .NET Framework reference assemblies.
+    exit /b 1
+)
 
 "%CSC%" /nologo /target:exe /platform:anycpu /langversion:5 /optimize+ /out:"%OUTDIR%\FileDeduper.Test.exe" /reference:"%REFDIR%\System.dll" /reference:"%REFDIR%\System.Core.dll" "%ROOT%Tests\SelfTest.cs" "%ROOT%Core\FileScanner.cs" "%ROOT%Core\DuplicateDetector.cs" "%ROOT%Core\SmartMarker.cs" "%ROOT%Core\FileDeleter.cs" "%ROOT%Models\Enums.cs" "%ROOT%Models\FileEntry.cs" "%ROOT%Models\DuplicateGroup.cs" "%ROOT%Models\AppSettings.cs" "%ROOT%Utils\ConfigStore.cs" "%ROOT%Utils\MiniJson.cs" "%ROOT%Utils\RecycleBinHelper.cs" "%ROOT%Utils\HashHelper.cs"
 

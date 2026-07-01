@@ -7,6 +7,7 @@ REM ============================================================
 setlocal enableextensions
 
 set CSC=C:\Windows\Microsoft.NET\Framework64\v4.0.30319\csc.exe
+if not exist "%CSC%" set CSC=C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 
 set ROOT=%~dp0
 set OUTDIR=%ROOT%bin\Release
@@ -21,6 +22,16 @@ echo Using compiler: %CSC%
 echo Reference dir:  %REFDIR%
 echo Output dir:     %OUTDIR%
 echo.
+
+if not exist "%CSC%" (
+    echo [FAILED] Cannot find .NET Framework csc.exe.
+    exit /b 1
+)
+
+if not exist "%REFDIR%\System.dll" (
+    echo [FAILED] Cannot find .NET Framework reference assemblies.
+    exit /b 1
+)
 
 "%CSC%" /nologo /target:winexe /platform:anycpu /langversion:5 /optimize+ /out:"%OUTDIR%\FileDeduper.exe" /win32icon:"%ROOT%Trash.ico" /reference:"%REFDIR%\System.dll" /reference:"%REFDIR%\System.Core.dll" /reference:"%REFDIR%\System.Drawing.dll" /reference:"%REFDIR%\System.Windows.Forms.dll" "%ROOT%Program.cs" "%ROOT%Properties\AssemblyInfo.cs" "%ROOT%Forms\MainForm.cs" "%ROOT%Forms\SettingsForm.cs" "%ROOT%Core\FileScanner.cs" "%ROOT%Core\DuplicateDetector.cs" "%ROOT%Core\SmartMarker.cs" "%ROOT%Core\FileDeleter.cs" "%ROOT%Models\Enums.cs" "%ROOT%Models\FileEntry.cs" "%ROOT%Models\DuplicateGroup.cs" "%ROOT%Models\AppSettings.cs" "%ROOT%Utils\ConfigStore.cs" "%ROOT%Utils\MiniJson.cs" "%ROOT%Utils\RecycleBinHelper.cs" "%ROOT%Utils\HashHelper.cs"
 
