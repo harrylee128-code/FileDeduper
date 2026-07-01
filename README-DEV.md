@@ -244,6 +244,16 @@ set OUTDIR=%ROOT%bin\Release
 
 ## 扩展开发
 
+### GPU / 硬件加速边界
+
+当前核心查重链路不接入 CUDA、OpenCL 或 Intel 硬件加速。原因：
+
+- 基础重复文件查找主要受磁盘 I/O、目录枚举和安全删除约束。
+- 全量 MD5 使用流式分块读取，CPU 成本通常不是主瓶颈。
+- GPU 依赖会增加驱动、运行时和分发复杂度，不符合 v2 绿色便携目标。
+
+如果未来增加图片相似度、视频指纹或 AI 内容识别，可作为可选模块接入 DirectML、OpenCL、OpenVINO 或 ONNX Runtime GPU。
+
 ### 添加新的保留策略
 1. 在 `Models/Enums.cs` 中添加新的 `KeepStrategy` 枚举值
 2. 在 `Core/SmartMarker.cs` 中实现对应的标记逻辑

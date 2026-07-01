@@ -214,6 +214,9 @@ namespace FileDeduper.Tests
             Check("回收站删除启用系统永久删除警告",
                 (RecycleBinHelper.RecycleFlags & 0x4000) == 0x4000,
                 ref passed, ref failed);
+            Check("自动化环境不会进入回收站删除 API",
+                !RecycleBinHelper.IsKnownAutomationSession() || !RecycleBinHelper.IsKnownRecycleBinSupportedPath(Path.GetTempPath()),
+                ref passed, ref failed);
             Console.WriteLine();
 
             // ---- 步骤8: 回收站模式安全测试 ----

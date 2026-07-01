@@ -108,6 +108,7 @@ namespace FileDeduper.Utils
                 return drive.IsReady
                     && drive.DriveType == DriveType.Fixed
                     && IsInteractiveUserSession()
+                    && !IsKnownAutomationSession()
                     && CanAccessRecycleBinShell();
             }
             catch
@@ -127,6 +128,25 @@ namespace FileDeduper.Utils
             {
                 return false;
             }
+        }
+
+        public static bool IsKnownAutomationSession()
+        {
+            return IsTruthy(Environment.GetEnvironmentVariable("CI"))
+                || IsTruthy(Environment.GetEnvironmentVariable("GITHUB_ACTIONS"))
+                || IsTruthy(Environment.GetEnvironmentVariable("TF_BUILD"))
+                || IsTruthy(Environment.GetEnvironmentVariable("TEAMCITY_VERSION"))
+                || IsTruthy(Environment.GetEnvironmentVariable("JENKINS_URL"));
+        }
+
+        private static bool IsTruthy(string value)
+        {
+            if (string.IsNullOrWhiteSpace(value)) return false;
+            return string.Equals(value, "1", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "true", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "yes", StringComparison.OrdinalIgnoreCase)
+                || string.Equals(value, "on", StringComparison.OrdinalIgnoreCase)
+                || !string.Equals(value, "false", StringComparison.OrdinalIgnoreCase);
         }
 
         public static bool CanAccessRecycleBinShell()

@@ -19,6 +19,6 @@ For file-deletion bugs, include a minimal disposable test folder layout. Do not 
 
 When the delete mode is set to Recycle Bin, FileDeduper must not silently fall back to permanent deletion. If Recycle Bin deletion fails, the file should remain in place and the failure should be visible to the user.
 
-Paths or environments that are not known to support the local Windows Recycle Bin, such as UNC/network paths, non-interactive service sessions, or sessions that cannot access the Windows Shell Recycle Bin namespace, should fail closed before the delete API is called.
+Paths or environments that are not known to support the local Windows Recycle Bin, such as UNC/network paths, CI/automation sessions, non-interactive service sessions, or sessions that cannot access the Windows Shell Recycle Bin namespace, should fail closed before the delete API is called.
 
 Recycle Bin calls should include the Windows Shell permanent-delete warning flag so the OS can interrupt cases where a delete would be destroyed rather than recycled.
