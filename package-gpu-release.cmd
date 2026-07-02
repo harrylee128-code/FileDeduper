@@ -1,12 +1,12 @@
 @echo off
 REM ============================================================
-REM Build FileDeduper and create a portable release zip.
-REM Output: dist\FileDeduper-v2.2.0-preview1-lite.zip
+REM Build FileDeduper, build CUDA provider, and create GPU preview zip.
+REM Output: dist\FileDeduper-v2.2.0-preview1-cuda.zip
 REM ============================================================
 setlocal enableextensions
 
 set ROOT=%~dp0
-set VERSION=2.2.0-preview1-lite
+set VERSION=2.2.0-preview1-cuda
 set DIST=%ROOT%dist
 set PACKAGE=%DIST%\FileDeduper-v%VERSION%
 set ZIP=%DIST%\FileDeduper-v%VERSION%.zip
@@ -14,13 +14,18 @@ set ZIP=%DIST%\FileDeduper-v%VERSION%.zip
 call "%ROOT%build.cmd"
 if errorlevel 1 exit /b 1
 
+call "%ROOT%build-gpu.cmd"
+if errorlevel 1 exit /b 1
+
 if exist "%PACKAGE%" rmdir /s /q "%PACKAGE%"
 if not exist "%DIST%" mkdir "%DIST%"
 mkdir "%PACKAGE%"
 
 copy "%ROOT%bin\Release\FileDeduper.exe" "%PACKAGE%\" >nul
+copy "%ROOT%bin\Release\FileDeduperCuda.dll" "%PACKAGE%\" >nul
 copy "%ROOT%README.md" "%PACKAGE%\" >nul
 copy "%ROOT%README.txt" "%PACKAGE%\" >nul
+copy "%ROOT%README-GPU.md" "%PACKAGE%\" >nul
 copy "%ROOT%LICENSE" "%PACKAGE%\" >nul
 copy "%ROOT%CHANGELOG.md" "%PACKAGE%\" >nul
 

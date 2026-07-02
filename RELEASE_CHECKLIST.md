@@ -7,7 +7,8 @@ Use this before publishing a GitHub release.
 - [ ] `build.cmd` succeeds.
 - [ ] `build-test.cmd` succeeds.
 - [ ] `bin\Test\FileDeduper.Test.exe` reports `ALL PASSED`.
-- [ ] `package-release.cmd` creates `dist\FileDeduper-v2.1.0-preview3-lite.zip`.
+- [ ] `package-release.cmd` creates `dist\FileDeduper-v2.2.0-preview1-lite.zip`.
+- [ ] `package-gpu-release.cmd` creates `dist\FileDeduper-v2.2.0-preview1-cuda.zip` when CUDA Toolkit is installed.
 - [ ] GitHub Actions Build workflow passes on the release commit and uploads the portable zip artifact.
 - [ ] Recycle Bin mode is manually verified with disposable files.
 - [ ] Permanent delete mode is verified only with disposable files.
@@ -33,6 +34,7 @@ Use this before publishing a GitHub release.
 - [ ] Lite/portable asset remains available and requires no GPU runtime.
 - [ ] GPU-enabled asset, if published, documents supported GPU vendors, driver/runtime requirements, fallback behavior, and third-party licenses.
 - [ ] GPU-enabled asset does not replace or weaken CPU full-file hash correctness.
+- [ ] CUDA benchmark result is reported honestly; do not claim acceleration when CUDA is slower than CPU.
 
 ## Manual UI Pass
 

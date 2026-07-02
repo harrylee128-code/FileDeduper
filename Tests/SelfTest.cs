@@ -231,11 +231,12 @@ namespace FileDeduper.Tests
             string hashProbe = Path.Combine(testRoot, "FolderA", "doc.txt");
             string cpuHash = HashHelper.ComputeFullMd5(hashProbe, HardwareAccelerationMode.CpuOnly, null);
             var gpuAttempt = HashEngine.ComputeFullMd5(hashProbe, HardwareAccelerationMode.GpuExperimental, null);
-            Check("GPU experimental 模式没有 provider 时保持完整哈希正确性",
+            Check("GPU experimental 模式保持完整哈希正确性",
                 !string.IsNullOrEmpty(cpuHash) && cpuHash == gpuAttempt.Hash,
                 ref passed, ref failed);
-            Check("GPU experimental 模式没有 provider 时回退 CPU",
-                !gpuAttempt.HardwareAccelerated && !string.IsNullOrEmpty(gpuAttempt.FallbackReason),
+            Check("GPU experimental 模式要么 CUDA 加速，要么明确回退 CPU",
+                (gpuAttempt.HardwareAccelerated && gpuAttempt.ProviderName.IndexOf("CUDA", StringComparison.OrdinalIgnoreCase) >= 0)
+                || (!gpuAttempt.HardwareAccelerated && !string.IsNullOrEmpty(gpuAttempt.FallbackReason)),
                 ref passed, ref failed);
             Console.WriteLine();
 
@@ -353,6 +354,8 @@ namespace FileDeduper.Tests
             settings.IncludeSubdirectories = false;
             settings.HardwareAccelerationMode = HardwareAccelerationMode.GpuExperimental;
             settings.HashParallelism = 3;
+            settings.ExcludedDirectoryKeywords.Add("cache");
+            settings.ExcludedFileNameKeywords.Add("draft");
             settings.LastFolders.Add(testRoot);
             string tempConfig = Path.Combine(Path.GetTempPath(), "FileDeduper_test_config.json");
             // 临时改 BaseDirectory 不现实，直接测序列化往返：保存到 exe 同目录再读
@@ -364,19 +367,67 @@ namespace FileDeduper.Tests
                       && loaded.IncludeSubdirectories == false
                       && loaded.HardwareAccelerationMode == HardwareAccelerationMode.GpuExperimental
                       && loaded.HashParallelism == 3
+                      && loaded.ExcludedDirectoryKeywords.Contains("cache")
+                      && loaded.ExcludedFileNameKeywords.Contains("draft")
                       && loaded.LastFolders.Contains(testRoot);
             Check("配置往返读写一致", cfgOk, ref passed, ref failed);
             // 清理：恢复默认配置
             ConfigStore.Save(new AppSettings());
             Console.WriteLine();
 
-            // ---- 步骤13: 版本信息测试 ----
-            Console.WriteLine("[13] 版本信息测试…");
+            // ---- 步骤13: 排除关键词测试 ----
+            Console.WriteLine("[13] 排除关键词测试…");
+            string excludeTempDir = Path.Combine(Path.GetTempPath(), "FileDeduperExcludeTest_" + Guid.NewGuid().ToString("N"));
+            Directory.CreateDirectory(excludeTempDir);
+            try
+            {
+                string keepDir = Path.Combine(excludeTempDir, "Keep");
+                string sensitiveDir = Path.Combine(excludeTempDir, "SensitiveArchive");
+                Directory.CreateDirectory(keepDir);
+                Directory.CreateDirectory(sensitiveDir);
+                File.WriteAllText(Path.Combine(keepDir, "keep-a.txt"), "same");
+                File.WriteAllText(Path.Combine(keepDir, "DRAFT-note.txt"), "same");
+                File.WriteAllText(Path.Combine(sensitiveDir, "secret-a.txt"), "same");
+                File.WriteAllText(Path.Combine(sensitiveDir, "secret-b.txt"), "same");
+
+                var excludedDirs = new List<string>();
+                excludedDirs.Add("sensitive");
+                var excludedFiles = new List<string>();
+                excludedFiles.Add("draft");
+                var excludeProgress = new CapturingScanProgress();
+                var excludeScanner = new FileScanner(
+                    new List<string> { excludeTempDir },
+                    true,
+                    0,
+                    excludedDirs,
+                    excludedFiles);
+                var excludeTask = excludeScanner.ScanAsync(excludeProgress, CancellationToken.None);
+                excludeTask.Wait();
+                var excludedFilesResult = excludeTask.Result;
+
+                bool onlyKeepFile = excludedFilesResult.Count == 1
+                                  && excludedFilesResult[0].FileName == "keep-a.txt";
+                Check("排除关键词按目录和文件名分栏生效且大小写不敏感",
+                    onlyKeepFile, ref passed, ref failed);
+                Check("排除统计包含文件和目录",
+                    excludeProgress.MaxExcludedFiles >= 1 && excludeProgress.MaxExcludedDirectories >= 1,
+                    ref passed, ref failed);
+            }
+            finally
+            {
+                if (Directory.Exists(excludeTempDir)) Directory.Delete(excludeTempDir, true);
+            }
+            Console.WriteLine();
+
+            // ---- 步骤14: 版本信息测试 ----
+            Console.WriteLine("[14] 版本信息测试…");
             Check("版本显示名包含当前预发布版本",
-                AppVersionInfo.DisplayVersion == "v2.1.0-preview.3",
+                AppVersionInfo.DisplayVersion == "v2.2.0-preview.1",
                 ref passed, ref failed);
-            Check("关于窗口版本文本可区分 Lite 包",
-                AppVersionInfo.AboutVersionLine.Contains("Lite") && AppVersionInfo.AboutVersionLine.Contains("v2.1.0-preview.3"),
+            Check("关于窗口版本文本可区分 Lite/CUDA 渠道",
+                AppVersionInfo.AboutVersionLine.Contains("v2.2.0-preview.1")
+                && (AppVersionInfo.AboutVersionLine.Contains("Lite")
+                    || AppVersionInfo.AboutVersionLine.Contains("CUDA")),
                 ref passed, ref failed);
             Console.WriteLine();
 
@@ -464,7 +515,7 @@ namespace FileDeduper.Tests
 
             var gpu = HashBenchmark.Run(files, HardwareAccelerationMode.GpuExperimental, HashParallelism.Auto);
             Console.WriteLine("GPU experimental provider: " + gpu.Provider);
-            Console.WriteLine("GPU experimental accelerated: False");
+            Console.WriteLine("GPU experimental accelerated: " + gpu.HardwareAccelerated);
             Console.WriteLine("GPU experimental fallback: " + gpu.FallbackReason);
             Console.WriteLine("GPU experimental elapsed: " + gpu.Elapsed.TotalSeconds.ToString("0.000") + "s");
             Console.WriteLine("GPU experimental throughput: " + gpu.MegabytesPerSecond.ToString("0.00") + " MB/s");
@@ -504,6 +555,18 @@ namespace FileDeduper.Tests
                     }
                     return false;
                 }
+            }
+        }
+
+        private sealed class CapturingScanProgress : IProgress<ScanProgress>
+        {
+            public int MaxExcludedFiles;
+            public int MaxExcludedDirectories;
+
+            public void Report(ScanProgress value)
+            {
+                if (value.ExcludedFileCount > MaxExcludedFiles) MaxExcludedFiles = value.ExcludedFileCount;
+                if (value.ExcludedDirectoryCount > MaxExcludedDirectories) MaxExcludedDirectories = value.ExcludedDirectoryCount;
             }
         }
 

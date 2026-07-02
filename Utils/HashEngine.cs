@@ -38,13 +38,24 @@ namespace FileDeduper.Utils
             HardwareAccelerationMode mode,
             Action<long, long> progress)
         {
-            IHashProvider provider = SelectProvider(mode);
+            string selectionReason;
+            IHashProvider provider = SelectProvider(mode, out selectionReason);
             var result = provider.ComputeFullMd5(path, progress);
+
+            if (provider.IsHardwareAccelerated && string.IsNullOrEmpty(result.Hash))
+            {
+                string cudaReason = string.IsNullOrEmpty(result.FallbackReason) ? selectionReason : result.FallbackReason;
+                var fallback = new CpuHashProvider().ComputeFullMd5(path, progress);
+                fallback.FallbackReason = "CUDA provider failed; CPU fallback used. " + cudaReason;
+                return fallback;
+            }
 
             if (mode == HardwareAccelerationMode.GpuExperimental && !result.HardwareAccelerated)
             {
                 var caps = HardwareCapabilityDetector.Detect();
-                result.FallbackReason = string.IsNullOrEmpty(caps.Reason)
+                result.FallbackReason = !string.IsNullOrEmpty(selectionReason)
+                    ? selectionReason
+                    : string.IsNullOrEmpty(caps.Reason)
                     ? "GPU provider unavailable; CPU fallback used."
                     : caps.Reason;
             }
@@ -65,15 +76,28 @@ namespace FileDeduper.Utils
             }
             if (mode == HardwareAccelerationMode.GpuExperimental)
             {
-                return caps.Reason;
+                string cudaReason;
+                return CudaHashProvider.IsAvailable(out cudaReason)
+                    ? "CUDA provider available: " + cudaReason
+                    : "CUDA provider unavailable: " + cudaReason;
             }
             return caps.NvidiaSmiAvailable
                 ? "Auto: " + caps.Reason
                 : "Auto: CPU provider";
         }
 
-        private static IHashProvider SelectProvider(HardwareAccelerationMode mode)
+        private static IHashProvider SelectProvider(HardwareAccelerationMode mode, out string reason)
         {
+            reason = "";
+            if (mode == HardwareAccelerationMode.GpuExperimental)
+            {
+                if (CudaHashProvider.IsAvailable(out reason))
+                {
+                    return new CudaHashProvider();
+                }
+                return new CpuHashProvider();
+            }
+
             // Native CUDA/Intel providers are intentionally optional. Until a redistributable
             // provider is present, CPU remains the correctness baseline.
             return new CpuHashProvider();

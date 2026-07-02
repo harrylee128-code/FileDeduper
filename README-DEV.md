@@ -73,6 +73,7 @@ FileDeduper/
 │   ├── ConfigStore.cs            # JSON 配置存储
 │   ├── HardwareCapabilityDetector.cs # NVIDIA/CUDA 环境探测
 │   ├── HashBenchmark.cs          # 哈希吞吐 benchmark
+│   ├── CudaHashProvider.cs       # CUDA native provider P/Invoke 封装
 │   ├── HashEngine.cs             # 哈希 provider/fallback 抽象
 │   ├── HashHelper.cs             # MD5 哈希计算入口
 │   ├── HashParallelism.cs        # 哈希并行度解析与限制
@@ -259,6 +260,8 @@ set OUTDIR=%ROOT%bin\Release
 
 如果未来增加图片相似度、视频指纹或 AI 内容识别，可作为可选模块接入 CUDA、DirectML、OpenCL、OpenVINO 或 ONNX Runtime GPU。
 
+当前 CUDA 预览 provider 位于 `native/cuda/FileDeduperCuda.cu`，通过 `FileDeduperCuda.dll` 暴露 C ABI。它计算完整文件 MD5，不使用抽样哈希；v1 以 correctness-first 为目标，benchmark 结果可能慢于 CPU。
+
 哈希验证支持 `HashParallelism`：
 
 - `0`：Auto，当前最多 4 个并发文件哈希。
@@ -346,7 +349,9 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
   "DeleteMode": 0,
   "HashVerifyLikelyGroups": false,
   "HardwareAccelerationMode": 0,
-  "HashParallelism": 0
+  "HashParallelism": 0,
+  "ExcludedDirectoryKeywords": ["cache"],
+  "ExcludedFileNameKeywords": ["draft"]
 }
 ```
 
@@ -359,12 +364,21 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 - `HashVerifyLikelyGroups`：是否对高置信度组也做哈希验证
 - `HardwareAccelerationMode`：硬件加速模式（0=Auto，1=CPU only，2=GPU experimental）
 - `HashParallelism`：哈希验证并行度（0=Auto，1=单线程）
+- `ExcludedDirectoryKeywords`：排除文件夹关键词，匹配目录路径或目录名
+- `ExcludedFileNameKeywords`：排除文件名关键词，只匹配文件名
 
 ---
 
 ## 版本历史
 
-### v2.1.0-preview.3 (当前开发版本)
+### v2.2.0-preview.1 (当前开发版本)
+- 文件夹/文件名排除关键词分栏配置
+- 扫描状态显示排除统计
+- 实验性 CUDA native provider 与 CUDA 预览包
+- 关于窗口运行时显示 Lite/CUDA/CUDA fallback 渠道
+- Lite 包名升级为 `FileDeduper-v2.2.0-preview1-lite.zip`
+
+### v2.1.0-preview.3
 - 主窗口标题和关于窗口显示版本号与 Lite 包标识
 - README 增加版本更新/修复记录
 
@@ -423,4 +437,4 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 ---
 
 **最后更新：2026-07-02**
-**版本：v2.1.0-preview.3**
+**版本：v2.2.0-preview.1**

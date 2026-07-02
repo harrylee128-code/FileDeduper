@@ -45,17 +45,10 @@ namespace FileDeduper.Utils
                 settings.HardwareAccelerationMode = (HardwareAccelerationMode)GetLong(map, "HardwareAccelerationMode", (long)settings.HardwareAccelerationMode);
                 settings.HashParallelism = HashParallelism.NormalizeForSettings((int)GetLong(map, "HashParallelism", settings.HashParallelism));
                 settings.MinFileSize = GetLong(map, "MinFileSize", settings.MinFileSize);
+                settings.ExcludedDirectoryKeywords = GetStringList(map, "ExcludedDirectoryKeywords");
+                settings.ExcludedFileNameKeywords = GetStringList(map, "ExcludedFileNameKeywords");
 
-                object foldersObj;
-                if (map.TryGetValue("LastFolders", out foldersObj) && foldersObj is List<object>)
-                {
-                    var folders = (List<object>)foldersObj;
-                    settings.LastFolders = new List<string>();
-                    foreach (var f in folders)
-                    {
-                        if (f is string) settings.LastFolders.Add((string)f);
-                    }
-                }
+                settings.LastFolders = GetStringList(map, "LastFolders");
             }
             catch
             {
@@ -78,13 +71,9 @@ namespace FileDeduper.Utils
                 sb.Append("  \"HardwareAccelerationMode\": ").Append((int)settings.HardwareAccelerationMode).Append(",\r\n");
                 sb.Append("  \"HashParallelism\": ").Append(HashParallelism.NormalizeForSettings(settings.HashParallelism)).Append(",\r\n");
                 sb.Append("  \"MinFileSize\": ").Append(settings.MinFileSize).Append(",\r\n");
-                sb.Append("  \"LastFolders\": [");
-                for (int i = 0; i < settings.LastFolders.Count; i++)
-                {
-                    if (i > 0) sb.Append(", ");
-                    sb.Append(MiniJson.Quote(settings.LastFolders[i]));
-                }
-                sb.Append("]\r\n");
+                AppendStringArray(sb, "ExcludedDirectoryKeywords", settings.ExcludedDirectoryKeywords, true);
+                AppendStringArray(sb, "ExcludedFileNameKeywords", settings.ExcludedFileNameKeywords, true);
+                AppendStringArray(sb, "LastFolders", settings.LastFolders, false);
                 sb.Append("}\r\n");
                 File.WriteAllText(ConfigPath, sb.ToString(), Encoding.UTF8);
             }
@@ -110,6 +99,41 @@ namespace FileDeduper.Utils
             if (v is double) return (long)(double)v;
             if (v is int) return (int)v;
             return defaultValue;
+        }
+
+        private static List<string> GetStringList(Dictionary<string, object> map, string key)
+        {
+            var result = new List<string>();
+            object obj;
+            if (!map.TryGetValue(key, out obj) || !(obj is List<object>)) return result;
+
+            var values = (List<object>)obj;
+            foreach (var value in values)
+            {
+                if (!(value is string)) continue;
+                string s = ((string)value).Trim();
+                if (s.Length > 0) result.Add(s);
+            }
+            return result;
+        }
+
+        private static void AppendStringArray(StringBuilder sb, string key, List<string> values, bool trailingComma)
+        {
+            sb.Append("  \"").Append(key).Append("\": [");
+            if (values != null)
+            {
+                bool first = true;
+                foreach (string value in values)
+                {
+                    if (string.IsNullOrWhiteSpace(value)) continue;
+                    if (!first) sb.Append(", ");
+                    sb.Append(MiniJson.Quote(value.Trim()));
+                    first = false;
+                }
+            }
+            sb.Append("]");
+            if (trailingComma) sb.Append(",");
+            sb.Append("\r\n");
         }
     }
 }

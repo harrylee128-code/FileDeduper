@@ -444,11 +444,20 @@ namespace FileDeduper.Forms
             _statusLabel.Text = "正在扫描文件…";
 
             _cts = new CancellationTokenSource();
-            var scanner = new FileScanner(folders, _includeSubDirsChk.Checked, _settings.MinFileSize);
+            var scanner = new FileScanner(
+                folders,
+                _includeSubDirsChk.Checked,
+                _settings.MinFileSize,
+                _settings.ExcludedDirectoryKeywords,
+                _settings.ExcludedFileNameKeywords);
             var progress = new Progress<ScanProgress>(p =>
             {
-                _statusLabel.Text = string.Format("扫描中… 已扫描 {0} 个文件，跳过 {1} 个，当前：{2}",
-                    p.ScannedCount, p.SkippedCount, TruncatePath(p.CurrentDirectory));
+                _statusLabel.Text = string.Format("扫描中… 已扫描 {0} 个文件，排除 {1} 个文件/{2} 个目录，跳过 {3} 个，当前：{4}",
+                    p.ScannedCount,
+                    p.ExcludedFileCount,
+                    p.ExcludedDirectoryCount,
+                    p.SkippedCount,
+                    TruncatePath(p.CurrentDirectory));
             });
 
             scanner.ScanAsync(progress, _cts.Token).ContinueWith(t =>

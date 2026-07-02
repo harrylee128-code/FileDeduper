@@ -29,6 +29,12 @@ namespace FileDeduper.Models
         /// <summary>哈希验证并行度；0 表示自动。</summary>
         public int HashParallelism { get; set; }
 
+        /// <summary>排除文件夹关键词；命中完整目录路径或目录名时跳过整棵目录。</summary>
+        public List<string> ExcludedDirectoryKeywords { get; set; }
+
+        /// <summary>排除文件名关键词；只匹配文件名，不匹配父目录。</summary>
+        public List<string> ExcludedFileNameKeywords { get; set; }
+
         /// <summary>最小文件大小(字节)，小于此值的文件忽略。</summary>
         public long MinFileSize { get; set; }
 
@@ -41,6 +47,8 @@ namespace FileDeduper.Models
             HashVerifyLikelyGroups = false;
             HardwareAccelerationMode = HardwareAccelerationMode.Auto;
             HashParallelism = 0;
+            ExcludedDirectoryKeywords = new List<string>();
+            ExcludedFileNameKeywords = new List<string>();
             MinFileSize = 0;
         }
     }

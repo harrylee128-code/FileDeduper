@@ -16,6 +16,8 @@ namespace FileDeduper.Core
         public int SkippedCount;
         public long TotalBytes;
         public string CurrentDirectory;
+        public int ExcludedFileCount;
+        public int ExcludedDirectoryCount;
 
         public ScanProgress()
         {
@@ -32,12 +34,26 @@ namespace FileDeduper.Core
         private readonly List<string> _folders;
         private readonly bool _includeSubdirectories;
         private readonly long _minFileSize;
+        private readonly List<string> _excludedDirectoryKeywords;
+        private readonly List<string> _excludedFileNameKeywords;
 
         public FileScanner(List<string> folders, bool includeSubdirectories, long minFileSize)
+            : this(folders, includeSubdirectories, minFileSize, null, null)
+        {
+        }
+
+        public FileScanner(
+            List<string> folders,
+            bool includeSubdirectories,
+            long minFileSize,
+            List<string> excludedDirectoryKeywords,
+            List<string> excludedFileNameKeywords)
         {
             _folders = folders ?? new List<string>();
             _includeSubdirectories = includeSubdirectories;
             _minFileSize = minFileSize;
+            _excludedDirectoryKeywords = NormalizeKeywords(excludedDirectoryKeywords);
+            _excludedFileNameKeywords = NormalizeKeywords(excludedFileNameKeywords);
         }
 
         /// <summary>
@@ -105,6 +121,14 @@ namespace FileDeduper.Core
             IProgress<ScanProgress> progress,
             CancellationToken cancellationToken)
         {
+            if (IsExcludedDirectory(folder))
+            {
+                progressState.ExcludedDirectoryCount++;
+                progressState.CurrentDirectory = folder;
+                if (progress != null) progress.Report(Clone(progressState));
+                yield break;
+            }
+
             string[] files;
             try
             {
@@ -120,6 +144,14 @@ namespace FileDeduper.Core
             foreach (string file in files)
             {
                 if (cancellationToken.IsCancellationRequested) yield break;
+                if (IsExcludedFileName(file))
+                {
+                    progressState.ExcludedFileCount++;
+                    string dir = Path.GetDirectoryName(file);
+                    if (dir != null) progressState.CurrentDirectory = dir;
+                    if (progress != null) progress.Report(Clone(progressState));
+                    continue;
+                }
                 yield return file;
             }
 
@@ -155,8 +187,55 @@ namespace FileDeduper.Core
                 ScannedCount = p.ScannedCount,
                 SkippedCount = p.SkippedCount,
                 TotalBytes = p.TotalBytes,
-                CurrentDirectory = p.CurrentDirectory
+                CurrentDirectory = p.CurrentDirectory,
+                ExcludedFileCount = p.ExcludedFileCount,
+                ExcludedDirectoryCount = p.ExcludedDirectoryCount
             };
+        }
+
+        private bool IsExcludedDirectory(string folder)
+        {
+            if (_excludedDirectoryKeywords.Count == 0 || string.IsNullOrEmpty(folder)) return false;
+            string name = Path.GetFileName(folder.TrimEnd(Path.DirectorySeparatorChar, Path.AltDirectorySeparatorChar));
+            foreach (string keyword in _excludedDirectoryKeywords)
+            {
+                if (ContainsIgnoreCase(folder, keyword)) return true;
+                if (!string.IsNullOrEmpty(name) && ContainsIgnoreCase(name, keyword)) return true;
+            }
+            return false;
+        }
+
+        private bool IsExcludedFileName(string path)
+        {
+            if (_excludedFileNameKeywords.Count == 0 || string.IsNullOrEmpty(path)) return false;
+            string name = Path.GetFileName(path);
+            foreach (string keyword in _excludedFileNameKeywords)
+            {
+                if (!string.IsNullOrEmpty(name) && ContainsIgnoreCase(name, keyword)) return true;
+            }
+            return false;
+        }
+
+        private static bool ContainsIgnoreCase(string text, string keyword)
+        {
+            return text != null
+                && keyword != null
+                && text.IndexOf(keyword, StringComparison.OrdinalIgnoreCase) >= 0;
+        }
+
+        private static List<string> NormalizeKeywords(List<string> keywords)
+        {
+            var result = new List<string>();
+            if (keywords == null) return result;
+
+            var seen = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+            foreach (string keyword in keywords)
+            {
+                if (string.IsNullOrWhiteSpace(keyword)) continue;
+                string trimmed = keyword.Trim();
+                if (seen.Add(trimmed)) result.Add(trimmed);
+            }
+            return result;
         }
     }
 }

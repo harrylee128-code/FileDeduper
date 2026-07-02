@@ -16,6 +16,7 @@ namespace FileDeduper.Utils
         public TimeSpan Elapsed;
         public string Provider;
         public string FallbackReason;
+        public bool HardwareAccelerated;
         public int RequestedParallelism;
         public int EffectiveParallelism;
 
@@ -81,6 +82,7 @@ namespace FileDeduper.Utils
             lock (result)
             {
                 result.Provider = hash.ProviderName;
+                result.HardwareAccelerated = result.HardwareAccelerated || hash.HardwareAccelerated;
                 if (!string.IsNullOrEmpty(hash.FallbackReason)) result.FallbackReason = hash.FallbackReason;
             }
         }

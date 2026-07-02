@@ -22,7 +22,7 @@ For normal duplicate verification, disk I/O is often the limiting factor. A GPU 
 - `CpuOnly` forces the portable CPU implementation.
 - `GpuExperimental` probes the environment and falls back to CPU if no redistributable native provider is available.
 - Hash verification can process multiple files in the same candidate group concurrently. `HashParallelism = 0` means Auto, currently capped at 4 concurrent files; `1` forces sequential hashing.
-- The app currently detects NVIDIA driver visibility via `nvidia-smi`, but does not ship a CUDA kernel or third-party native DLL.
+- The CUDA preview package includes `FileDeduperCuda.dll`, an optional native provider that computes full-file MD5 through CUDA and falls back to CPU on load or runtime failure.
 
 ## CUDA / Intel / DirectML Direction
 
@@ -54,4 +54,4 @@ build-test.cmd
 bin\Test\FileDeduper.Test.exe --benchmark <folder>
 ```
 
-The benchmark reports file count, bytes processed, provider name, requested/effective parallelism, elapsed time, and MB/s. Use disposable data first. For real TB-scale validation, run on the target GPU machine and compare CPU sequential, CPU Auto parallel, and GPU experimental or any future native provider.
+The benchmark reports file count, bytes processed, provider name, requested/effective parallelism, hardware acceleration state, elapsed time, and MB/s. Use disposable data first. For real TB-scale validation, run on the target GPU machine and compare CPU sequential, CPU Auto parallel, and CUDA experimental. Do not assume CUDA is faster; the v1 provider is correctness-first.

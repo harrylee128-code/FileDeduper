@@ -1,6 +1,18 @@
 # Changelog
 
-## v2.1.0-preview.3 - Unreleased
+## v2.2.0-preview.1 - Unreleased
+
+- 新增“排除关键词”功能：文件夹关键词和文件名关键词分栏配置。
+- 文件夹关键词命中目录路径或目录名时跳过整棵目录；文件名关键词只匹配文件名。
+- 扫描状态新增排除文件数/目录数，避免误以为漏扫。
+- 绿色配置文件保存排除关键词，随 exe 同目录迁移。
+- 新增实验性 CUDA native provider：`FileDeduperCuda.dll`，GPU 模式可计算完整文件 MD5。
+- 新增 `build-gpu.cmd` 和 `package-gpu-release.cmd`，用于生成 CUDA 预览包。
+- 关于窗口运行时显示 `Lite`、`CUDA` 或 `CUDA fallback` 渠道。
+- 版本升级到 `v2.2.0-preview.1`，Lite 包名为 `FileDeduper-v2.2.0-preview1-lite.zip`。
+- CUDA 包名为 `FileDeduper-v2.2.0-preview1-cuda.zip`。
+
+## v2.1.0-preview.3 - 2026-07-02
 
 - 关于窗口和主窗口标题显示明确版本号与 Lite 包标识，避免桌面多版本混淆。
 - README 增加版本更新记录，汇总各版本主要新增、修复和安全变化。

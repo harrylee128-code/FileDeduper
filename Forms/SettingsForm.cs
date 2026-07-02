@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
 using System.Windows.Forms;
 using FileDeduper.Models;
@@ -25,8 +26,11 @@ namespace FileDeduper.Forms
         private RadioButton _accelGpuRadio;
         private NumericUpDown _minSizeUpDown;
         private NumericUpDown _hashParallelismUpDown;
+        private Button _exclusionsBtn;
         private Button _okBtn;
         private Button _cancelBtn;
+        private List<string> _excludedDirectoryKeywords;
+        private List<string> _excludedFileNameKeywords;
 
         public SettingsForm(AppSettings settings)
         {
@@ -139,12 +143,19 @@ namespace FileDeduper.Forms
             _hashParallelismUpDown.Maximum = HashParallelism.Maximum;
             _hashParallelismUpDown.Value = 0;
 
+            _exclusionsBtn = new Button();
+            _exclusionsBtn.Text = "排除关键词...";
+            _exclusionsBtn.Location = new Point(310, 98);
+            _exclusionsBtn.Size = new Size(90, 28);
+            _exclusionsBtn.Click += ExclusionsBtn_Click;
+
             scanGroup.Controls.Add(_includeSubDirsChk);
             scanGroup.Controls.Add(_verifyLikelyChk);
             scanGroup.Controls.Add(minLabel);
             scanGroup.Controls.Add(_minSizeUpDown);
             scanGroup.Controls.Add(parallelLabel);
             scanGroup.Controls.Add(_hashParallelismUpDown);
+            scanGroup.Controls.Add(_exclusionsBtn);
             this.Controls.Add(scanGroup);
             y += 148;
 
@@ -211,6 +222,8 @@ namespace FileDeduper.Forms
             _accelGpuRadio.Checked = Settings.HardwareAccelerationMode == HardwareAccelerationMode.GpuExperimental;
             _minSizeUpDown.Value = Math.Max(0, Math.Min(_minSizeUpDown.Maximum, Settings.MinFileSize / 1024));
             _hashParallelismUpDown.Value = Math.Max(_hashParallelismUpDown.Minimum, Math.Min(_hashParallelismUpDown.Maximum, Settings.HashParallelism));
+            _excludedDirectoryKeywords = CloneList(Settings.ExcludedDirectoryKeywords);
+            _excludedFileNameKeywords = CloneList(Settings.ExcludedFileNameKeywords);
         }
 
         private void OkBtn_Click(object sender, EventArgs e)
@@ -225,15 +238,40 @@ namespace FileDeduper.Forms
                                               : _accelGpuRadio.Checked ? HardwareAccelerationMode.GpuExperimental
                                               : HardwareAccelerationMode.Auto;
             Settings.HashParallelism = HashParallelism.NormalizeForSettings((int)_hashParallelismUpDown.Value);
+            Settings.ExcludedDirectoryKeywords = CloneList(_excludedDirectoryKeywords);
+            Settings.ExcludedFileNameKeywords = CloneList(_excludedFileNameKeywords);
             Settings.MinFileSize = (long)_minSizeUpDown.Value * 1024;
             this.DialogResult = DialogResult.OK;
             this.Close();
+        }
+
+        private void ExclusionsBtn_Click(object sender, EventArgs e)
+        {
+            using (var dlg = new ExclusionSettingsForm(_excludedDirectoryKeywords, _excludedFileNameKeywords))
+            {
+                if (dlg.ShowDialog(this) == DialogResult.OK)
+                {
+                    _excludedDirectoryKeywords = CloneList(dlg.ExcludedDirectoryKeywords);
+                    _excludedFileNameKeywords = CloneList(dlg.ExcludedFileNameKeywords);
+                }
+            }
         }
 
         private void CancelBtn_Click(object sender, EventArgs e)
         {
             this.DialogResult = DialogResult.Cancel;
             this.Close();
+        }
+
+        private static List<string> CloneList(List<string> values)
+        {
+            var result = new List<string>();
+            if (values == null) return result;
+            foreach (string value in values)
+            {
+                if (!string.IsNullOrWhiteSpace(value)) result.Add(value.Trim());
+            }
+            return result;
         }
     }
 }
