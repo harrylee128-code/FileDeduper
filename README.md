@@ -1,5 +1,7 @@
 # FileDeduper
 
+当前版本：`v2.1.0-preview.3` (`Lite`)
+
 FileDeduper 是一个绿色便携的 Windows 重复文件查找与清理工具。它使用 C# WinForms 和 .NET Framework 编写，不依赖第三方运行时，不写注册表，配置文件保存在程序同目录。
 
 ## 功能
@@ -69,7 +71,37 @@ GitHub Actions 会在 Windows runner 上执行同样的构建与自测。
 package-release.cmd
 ```
 
-生成文件位于 `dist\FileDeduper-v2.1.0-preview2-lite.zip`。
+生成文件位于 `dist\FileDeduper-v2.1.0-preview3-lite.zip`。
+
+## 版本更新记录
+
+### v2.1.0-preview.3
+
+- 主窗口标题和“关于”窗口显示明确版本号与 `Lite` 包标识。
+- README 增加版本更新/修复记录，便于区分桌面上的不同测试包。
+- 打包产物升级为 `FileDeduper-v2.1.0-preview3-lite.zip`。
+
+### v2.1.0-preview.2
+
+- 新增可选硬件加速模式、NVIDIA 环境探测、CPU fallback 和哈希 benchmark。
+- 新增哈希并行度设置；Auto 模式最多 4 个并发文件哈希，也可手动设为 1 单线程。
+- benchmark 输出 CPU sequential、CPU auto parallel、GPU experimental fallback 对比。
+- 明确 GitHub Release 后续拆分轻量版和 GPU 支持版。
+
+### v2.0.0
+
+- 修复回收站模式可能静默永久删除文件的高风险问题。
+- 回收站失败、UNC/network、CI/automation、非交互会话等场景 fail-closed，不回退永久删除。
+- MD5 精确验证改为完整文件读取，避免抽样哈希误判。
+- 疑似组默认不自动标记删除，降低误删风险。
+- 新增开源发布基础文件、CI、自测夹具和绿色打包脚本。
+
+### v1.2.0
+
+- 修复删除权限问题。
+- 修复 TreeView 自定义复选框显示。
+- 限制结果节点数量，降低内存风险。
+- 改进三态选择交互。
 
 ## 安全说明
 

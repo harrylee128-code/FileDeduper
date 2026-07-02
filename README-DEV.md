@@ -69,6 +69,7 @@ FileDeduper/
 ├── Tests/                        # 自动化测试
 │   └── SelfTest.cs               # 核心功能测试套件
 ├── Utils/                        # 工具类库
+│   ├── AppVersionInfo.cs         # 版本号与包渠道显示
 │   ├── ConfigStore.cs            # JSON 配置存储
 │   ├── HardwareCapabilityDetector.cs # NVIDIA/CUDA 环境探测
 │   ├── HashBenchmark.cs          # 哈希吞吐 benchmark
@@ -363,7 +364,11 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 
 ## 版本历史
 
-### v2.1.0-preview.2 (当前开发版本)
+### v2.1.0-preview.3 (当前开发版本)
+- 主窗口标题和关于窗口显示版本号与 Lite 包标识
+- README 增加版本更新/修复记录
+
+### v2.1.0-preview.2
 - 可选硬件加速模式与 provider/fallback 架构
 - NVIDIA 环境探测与哈希 benchmark
 - 可配置哈希并行度与 CPU sequential/auto parallel benchmark 对比
@@ -418,4 +423,4 @@ C:\Windows\Microsoft.NET\Framework\v4.0.30319\csc.exe
 ---
 
 **最后更新：2026-07-02**
-**版本：v2.1.0-preview.2**
+**版本：v2.1.0-preview.3**

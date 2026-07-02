@@ -1,6 +1,12 @@
 # Changelog
 
-## v2.1.0-preview.2 - Unreleased
+## v2.1.0-preview.3 - Unreleased
+
+- 关于窗口和主窗口标题显示明确版本号与 Lite 包标识，避免桌面多版本混淆。
+- README 增加版本更新记录，汇总各版本主要新增、修复和安全变化。
+- 打包版本升为 `FileDeduper-v2.1.0-preview3-lite.zip`。
+
+## v2.1.0-preview.2 - 2026-07-02
 
 - 新增可选硬件加速模式、NVIDIA 环境探测、CPU fallback 和哈希 benchmark 入口。
 - 新增可配置哈希并行度；Auto 模式保守使用最多 4 个并发文件哈希，支持手动设为 1 单线程。

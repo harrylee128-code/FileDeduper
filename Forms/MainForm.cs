@@ -55,7 +55,7 @@ namespace FileDeduper.Forms
 
         private void InitializeComponent()
         {
-            this.Text = "FileDeduper  ·  文件查重清理助手";
+            this.Text = AppVersionInfo.WindowTitle;
             this.Width = 1120;
             this.Height = 760;
             this.MinimumSize = new Size(960, 640);
@@ -1106,11 +1106,13 @@ namespace FileDeduper.Forms
         private void AboutBtn_Click(object sender, EventArgs e)
         {
             MessageBox.Show(this,
-                "文件查重清理助手  ·  绿色版\n\n" +
+                "文件查重清理助手  ·  绿色版\n" +
+                AppVersionInfo.AboutVersionLine + "\n\n" +
                 "功能：扫描多个文件夹，找出重复文件并智能标记，一键安全删除。\n\n" +
                 "• 两阶段查重：快速预筛 + 可选 MD5 精确验证\n" +
                 "• 三种保留策略：保留最旧 / 最新 / 路径最短\n" +
                 "• 疑似组默认不标记删除，需验证或手动选择\n" +
+                "• 可配置哈希并行度；GPU 实验模式无 provider 时回退 CPU\n" +
                 "• 删除方式：移入回收站（默认）或永久删除\n" +
                 "• 绿色免安装：配置随 exe 同目录走，不写注册表\n\n" +
                 "运行环境：.NET Framework 4.8（Win10/11 自带）",

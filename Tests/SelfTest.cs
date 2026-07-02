@@ -370,6 +370,16 @@ namespace FileDeduper.Tests
             ConfigStore.Save(new AppSettings());
             Console.WriteLine();
 
+            // ---- 步骤13: 版本信息测试 ----
+            Console.WriteLine("[13] 版本信息测试…");
+            Check("版本显示名包含当前预发布版本",
+                AppVersionInfo.DisplayVersion == "v2.1.0-preview.3",
+                ref passed, ref failed);
+            Check("关于窗口版本文本可区分 Lite 包",
+                AppVersionInfo.AboutVersionLine.Contains("Lite") && AppVersionInfo.AboutVersionLine.Contains("v2.1.0-preview.3"),
+                ref passed, ref failed);
+            Console.WriteLine();
+
                 Console.WriteLine("====== 测试结果 ======");
                 Console.WriteLine("通过: " + passed + "  失败: " + failed);
                 Console.WriteLine(failed == 0 ? "ALL PASSED ✓" : "SOME FAILED ✗");

@@ -7,7 +7,7 @@ Use this before publishing a GitHub release.
 - [ ] `build.cmd` succeeds.
 - [ ] `build-test.cmd` succeeds.
 - [ ] `bin\Test\FileDeduper.Test.exe` reports `ALL PASSED`.
-- [ ] `package-release.cmd` creates `dist\FileDeduper-v2.1.0-preview2-lite.zip`.
+- [ ] `package-release.cmd` creates `dist\FileDeduper-v2.1.0-preview3-lite.zip`.
 - [ ] GitHub Actions Build workflow passes on the release commit and uploads the portable zip artifact.
 - [ ] Recycle Bin mode is manually verified with disposable files.
 - [ ] Permanent delete mode is verified only with disposable files.
